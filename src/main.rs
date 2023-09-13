@@ -15,7 +15,7 @@ fn main() -> Result<(), IoError> {
     let container_entries: Vec<String> = match lister.fetch() {
         Ok(v) => v
             .iter()
-            .map(|x| format!("{}\t{}", x.name, x.addr))
+            .map(|x| format!("{}\t{}", x.addr, x.name))
             .collect(),
         Err(e) => {
             eprintln!("Could not fetch containers: {:?}", e);

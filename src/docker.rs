@@ -103,8 +103,6 @@ impl ContainerLister {
             }
         }
 
-        println!("hostentries: {:?}", &hostentries);
-
         Ok(hostentries)
     }
 }
