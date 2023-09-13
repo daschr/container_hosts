@@ -51,8 +51,6 @@ fn main() -> Result<(), IoError> {
         }
     };
 
-    println!("sections: {:?}", hosts.sections);
-
     hosts.update_section(Some("DOCKER_CONTAINERS"), container_entries);
 
     hosts.write()?;
