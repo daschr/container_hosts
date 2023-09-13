@@ -95,7 +95,7 @@ impl ContainerLister {
                 for net in container.NetworkSettings.Networks.values() {
                     if !net.IPAddress.is_empty() {
                         hostentries.push(ContainerHostEntry {
-                            name: name.to_owned(),
+                            name: name.to_owned().trim_matches('/').to_string(),
                             addr: net.IPAddress.clone(),
                         })
                     }
