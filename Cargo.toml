@@ -1,5 +1,5 @@
 [package]
-name = "containername_hosts"
+name = "container_hosts"
 version = "0.1.0"
 edition = "2021"
 
