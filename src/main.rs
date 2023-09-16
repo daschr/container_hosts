@@ -39,7 +39,7 @@ fn main() -> Result<(), IoError> {
         }
     };
 
-    if container_entries.len() == 0 {
+    if container_entries.is_empty() {
         exit(0);
     }
 

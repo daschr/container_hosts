@@ -28,9 +28,9 @@ impl Hosts {
         while reader.read_line(&mut line)? != 0 {
             let tr_line = line.trim();
 
-            if tr_line.starts_with("#")
+            if tr_line.starts_with('#')
                 && tr_line
-                    .trim_start_matches(&['#', ' '])
+                    .trim_start_matches(['#', ' '])
                     .starts_with("SECTION")
             {
                 let new_section_name = match tr_line.split(' ').last() {
@@ -38,7 +38,7 @@ impl Hosts {
                     _ => continue,
                 };
 
-                if entries.len() > 0 {
+                if !entries.is_empty() {
                     sections.insert(current_section, entries.clone());
                     entries.clear();
                 }
@@ -51,7 +51,7 @@ impl Hosts {
             line.clear();
         }
 
-        if entries.len() > 0 {
+        if !entries.is_empty() {
             sections.insert(current_section, entries);
         }
 
@@ -77,7 +77,7 @@ impl Hosts {
         if let Some(entries) = self.sections.remove(&None) {
             for e in entries.iter() {
                 writer.write_all(e.as_bytes())?;
-                writer.write_all(&['\n' as u8])?;
+                writer.write_all(&[b'\n'])?;
             }
         }
 
@@ -87,7 +87,7 @@ impl Hosts {
 
             for e in entries.iter() {
                 writer.write_all(e.as_bytes())?;
-                writer.write_all(&['\n' as u8])?;
+                writer.write_all(&[b'\n'])?;
             }
         }
 
