@@ -15,7 +15,7 @@ impl Hosts {
         let path: PathBuf = path.into();
         let fd = OpenOptions::new()
             .read(true)
-            .write(true)
+            .write(true) // just opening it rw here to check, if we can do it
             .open(path.clone())?;
         let mut sections: HashMap<Option<String>, Vec<String>> = HashMap::new();
 
@@ -71,7 +71,10 @@ impl Hosts {
     }
 
     pub fn write(&mut self) -> Result<(), IoError> {
-        let fd = OpenOptions::new().write(true).open(self.file.clone())?;
+        let fd = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(self.file.clone())?;
         let mut writer = BufWriter::new(fd);
 
         if let Some(entries) = self.sections.remove(&None) {
