@@ -61,13 +61,17 @@ impl Hosts {
         })
     }
 
-    pub fn update_section<S: Into<String>>(
+    pub fn update_section<S: Into<String>, I: Iterator<Item = String>>(
         &mut self,
         section_name: Option<S>,
-        entries: Vec<String>,
+        entries: I,
     ) {
         self.sections
-            .insert(section_name.map(|v| v.into()), entries);
+            .insert(section_name.map(|v| v.into()), entries.collect());
+    }
+
+    pub fn get_section<S: Into<String>>(&mut self, section_name: Option<S>) -> Option<Vec<String>> {
+        self.sections.get(&section_name.map(|v| v.into())).cloned()
     }
 
     pub fn write(&mut self) -> Result<(), IoError> {

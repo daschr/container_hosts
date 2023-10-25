@@ -1,11 +1,13 @@
-use std::io::Error as IoError;
-use std::process::exit;
-
-use clap::Parser;
-
 mod docker;
 mod hosts;
-use hosts::Hosts;
+mod hosts_updater;
+
+use clap::Parser;
+use hosts_updater::HostsUpdater;
+use log::{error, info};
+use std::path::PathBuf;
+use std::process::exit;
+use std::time::Duration;
 
 /// Generates /etc/hosts entries for all docker containers
 #[derive(Parser, Debug)]
@@ -22,38 +24,39 @@ struct Args {
     /// Path to hosts
     #[arg(long, default_value_t = String::from("/etc/hosts"))]
     hosts: String,
+
+    /// update interval in seconds
+    #[arg(long, default_value_t = 30u64)]
+    interval: u64,
+
+    /// turn on debug messages
+    #[arg(long, default_value_t = false)]
+    debug: bool,
+
+    /// exec command on change
+    #[arg(long, default_value_t = String::from(""))]
+    exec: String,
 }
 
-fn main() -> Result<(), IoError> {
+fn main() {
     let args = Args::parse();
 
-    let lister = docker::ContainerLister::new(args.docker_socket.as_str());
-    let container_entries: Vec<String> = match lister.fetch() {
-        Ok(v) => v
-            .iter()
-            .map(|x| format!("{}\t{}", x.addr, x.name))
-            .collect(),
-        Err(e) => {
-            eprintln!("Could not fetch containers: {:?}", e);
-            exit(1);
-        }
-    };
+    simple_logger::init_with_level(if args.debug {
+        log::Level::Debug
+    } else {
+        log::Level::Info
+    })
+    .expect("Could not initialize logger");
 
-    if container_entries.is_empty() {
-        exit(0);
+    let updater = HostsUpdater::new(
+        Duration::from_secs(args.interval),
+        PathBuf::from(args.hosts),
+        &args.docker_socket,
+    );
+
+    info!("started...");
+    if let Err(e) = updater.update_loop(&args.exec) {
+        error!("Error: {:?}", e);
+        exit(1);
     }
-
-    let mut hosts = match Hosts::new(args.hosts) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("Error: could not open hosts: {:?}", e);
-            exit(1);
-        }
-    };
-
-    hosts.update_section(Some("DOCKER_CONTAINERS"), container_entries);
-
-    hosts.write()?;
-
-    Ok(())
 }
