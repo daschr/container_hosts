@@ -1,0 +1,15 @@
+[Unit]
+Description=Polls for changed container network settings and updates /etc/hosts
+
+[Service]
+Type=simple
+User=root
+Group=root
+Restart=always
+#RemainAfterExit=no
+WorkingDirectory=/tmp
+ExecStart=/usr/local/bin/container_hosts --interval 15 --exec "nginx -t && /usr/bin/systemctl reload nginx"
+#StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target
