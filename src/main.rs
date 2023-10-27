@@ -33,9 +33,9 @@ struct Args {
     #[arg(long, default_value_t = false)]
     debug: bool,
 
-    /// exec command on change
-    #[arg(long, default_value_t = String::from(""))]
-    exec: String,
+    /// exec command on entry change
+    #[arg(long)]
+    exec: Option<String>,
 }
 
 fn main() {
@@ -55,7 +55,7 @@ fn main() {
     );
 
     info!("started...");
-    if let Err(e) = updater.update_loop(&args.exec) {
+    if let Err(e) = updater.update_loop(args.exec) {
         error!("Error: {:?}", e);
         exit(1);
     }

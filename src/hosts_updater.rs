@@ -3,7 +3,7 @@ use crate::docker::ListerError;
 use crate::hosts::Hosts;
 
 use log::{debug, error, info};
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::process::Command;
@@ -36,6 +36,26 @@ pub struct HostsUpdater {
     lister: docker::ContainerLister,
 }
 
+#[derive(Debug)]
+enum HostsOperationAction {
+    Add,
+    Del,
+    Update,
+}
+
+#[derive(Debug)]
+struct HostsOperation<'a>(HostsOperationAction, &'a String, &'a String);
+
+impl From<&HostsOperationAction> for &'static str {
+    fn from(v: &HostsOperationAction) -> Self {
+        match v {
+            HostsOperationAction::Add => "add",
+            HostsOperationAction::Del => "del",
+            HostsOperationAction::Update => "update",
+        }
+    }
+}
+
 impl HostsUpdater {
     pub fn new(interval: Duration, hosts_file: PathBuf, docker_socket: &str) -> Self {
         HostsUpdater {
@@ -45,16 +65,13 @@ impl HostsUpdater {
         }
     }
 
-    pub fn update_loop(&self, command: &str) -> Result<(), HostUpdaterError> {
+    pub fn update_loop(&self, command: Option<String>) -> Result<(), HostUpdaterError> {
         let mut cmd = Command::new("sh");
 
         loop {
             sleep(self.interval);
-            let daemon_container_entries: HashSet<String> = match self.lister.fetch() {
-                Ok(v) => v
-                    .iter()
-                    .map(|c| format!("{}\t{}", c.addr, c.name))
-                    .collect(),
+            let daemon_container_entries: Vec<(String, String)> = match self.lister.fetch() {
+                Ok(v) => v.iter().map(|c| (c.name.clone(), c.addr.clone())).collect(),
                 Err(e) => {
                     error!("Could not fetch containers: {:?}", e);
                     continue;
@@ -70,28 +87,47 @@ impl HostsUpdater {
                 }
             };
 
-            let hosts_container_entries = hosts.get_section(Some(CONTAINER_SECTION));
+            let mut hosts_container_entries: HashMap<String, String> = HashMap::new();
+            if let Some(hc_entries) = hosts.get_section(Some(CONTAINER_SECTION)) {
+                for entry in hc_entries {
+                    let entry = entry.trim();
+                    let mut spl = entry.split('\t');
+                    if let (Some(name), Some(addr)) = (spl.next(), spl.next()) {
+                        hosts_container_entries.insert(name.to_string(), addr.to_string());
+                    }
+                }
+            }
 
             debug!("hosts_container_entries: {:?}", &hosts_container_entries);
 
-            if (hosts_container_entries
-                .as_ref()
-                .map(|e| e.len())
-                .unwrap_or(0)
-                != daemon_container_entries.len())
-                || (hosts_container_entries.is_some()
-                    && hosts_container_entries
-                        .unwrap()
-                        .iter()
-                        .any(|c| !daemon_container_entries.contains(c)))
-            {
+            let mut operations: Vec<HostsOperation> = Vec::new();
+
+            for e in daemon_container_entries.iter() {
+                if hosts_container_entries.contains_key(&e.0) {
+                    if hosts_container_entries.remove(&e.0).unwrap() != e.1 {
+                        operations.push(HostsOperation(HostsOperationAction::Update, &e.0, &e.1));
+                    }
+                } else {
+                    operations.push(HostsOperation(HostsOperationAction::Add, &e.0, &e.1));
+                }
+            }
+
+            for e in hosts_container_entries.iter() {
+                operations.push(HostsOperation(HostsOperationAction::Del, e.0, e.1));
+            }
+
+            debug!("operations: {:?}", &operations);
+
+            if !operations.is_empty() {
                 info!(
                     "Container entries of daemon changed, updating {}",
                     self.hosts_file.as_path().display()
                 );
                 hosts.update_section(
                     Some(CONTAINER_SECTION),
-                    daemon_container_entries.iter().cloned(),
+                    daemon_container_entries
+                        .iter()
+                        .map(|c| format!("{}\t{}", c.0, c.1)),
                 );
 
                 if let Err(e) = hosts.write() {
@@ -103,10 +139,22 @@ impl HostsUpdater {
                     continue;
                 }
 
-                if !command.is_empty() {
+                if let Some(command) = command.as_ref() {
                     info!("Executing \"{}\"", command);
-                    if let Err(e) = cmd.args(["-c", command]).output() {
-                        error!("Failed to execute \"{}\": {:?}", command, e);
+
+                    for op in operations {
+                        let cmd_args = ["-c", command];
+
+                        match cmd
+                            .args(cmd_args)
+                            .env("HOSTS_ACTION", Into::<&str>::into(&op.0))
+                            .env("HOSTS_NAME", op.1)
+                            .env("HOSTS_ADDR", op.2)
+                            .output()
+                        {
+                            Ok(c) => debug!("Command executed: {:?}", c),
+                            Err(e) => error!("Failed to execute \"{}\": {:?}", command, e),
+                        }
                     }
                 }
             }
