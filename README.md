@@ -6,4 +6,5 @@ Add entries to the hosts-file for each container.
 
 ## Installing
 * `cp ./target/release/container_hosts /usr/local/bin/`
-* `cp container_hosts.cron /etc/cron.d/container_hosts`
+* `cp container_hosts.service /etc/systemd/system/`
+* `systemctl daemon-reload && systemctl enable container_hosts`
