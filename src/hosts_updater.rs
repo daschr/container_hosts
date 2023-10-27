@@ -50,7 +50,7 @@ impl From<&HostsOperationAction> for &'static str {
     fn from(v: &HostsOperationAction) -> Self {
         match v {
             HostsOperationAction::Add => "add",
-            HostsOperationAction::Del => "del",
+            HostsOperationAction::Del => "delete",
             HostsOperationAction::Update => "update",
         }
     }
