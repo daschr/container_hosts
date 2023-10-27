@@ -92,7 +92,7 @@ impl HostsUpdater {
                 for entry in hc_entries {
                     let entry = entry.trim();
                     let mut spl = entry.split('\t');
-                    if let (Some(name), Some(addr)) = (spl.next(), spl.next()) {
+                    if let (Some(addr), Some(name)) = (spl.next(), spl.next()) {
                         hosts_container_entries.insert(name.to_string(), addr.to_string());
                     }
                 }
@@ -127,7 +127,7 @@ impl HostsUpdater {
                     Some(CONTAINER_SECTION),
                     daemon_container_entries
                         .iter()
-                        .map(|c| format!("{}\t{}", c.0, c.1)),
+                        .map(|c| format!("{}\t{}", c.1, c.0)),
                 );
 
                 if let Err(e) = hosts.write() {
