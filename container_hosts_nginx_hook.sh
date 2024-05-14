@@ -14,12 +14,12 @@ case "$HOSTS_ACTION" in
       exit 0
     fi
     
-    for conf in "$confs"; do 
+    while read -r conf; do 
       conf_name="${conf##*/}"
       if [[ ! -h "$nginx_enabled/$conf_name" ]]; then
         ln -s "$conf" "$nginx_enabled/$conf_name"
       fi
-    done
+    done <<<"$confs"
     ;;
   delete)
     confs="$(grep -R -l "$HOSTS_NAME" "$nginx_enabled")"
@@ -27,11 +27,11 @@ case "$HOSTS_ACTION" in
       exit 0
     fi
   
-    for conf in "$confs"; do
+    while read -r conf; do
       if [[ -h "$conf" ]]; then
         rm "$conf"
       fi
-    done
+    done <<<"$confs"
     ;;
 esac
 

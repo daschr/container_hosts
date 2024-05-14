@@ -8,7 +8,7 @@ Group=root
 Restart=always
 #RemainAfterExit=no
 WorkingDirectory=/tmp
-ExecStart=/usr/local/bin/container_hosts --interval 15 --exec "nginx -t && /usr/bin/systemctl reload nginx"
+ExecStart=/usr/bin/container_hosts --interval 15 --exec "/usr/bin/container_hosts_nginx_hook.sh"
 #StandardOutput=null
 
 [Install]

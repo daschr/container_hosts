@@ -2,8 +2,8 @@
 name = "container_hosts"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "Polls for changed container network settings and updates /etc/hosts"
 
 [dependencies]
 serde_json = "1.0.105"
@@ -16,3 +16,21 @@ simple_logger = "4.2"
 [profile.release]
 strip=true
 lto=true
+
+[package.metadata.deb]
+maintainer = "David Schramm <david@dsxm.de>"
+copyright = "2024, David Schramm <david@dsxm.de>"
+license-file = ["LICENSE"]
+extended-description = """\
+A service which watches for container createions/deletion/updates,
+creates hosts entries for them and executes a script."""
+depends = "libcurl4"
+section = "web software"
+priority = "optional"
+maintainer-scripts = "debian/"
+systemd-units = { enable = false }
+assets = [
+    ["target/release/container_hosts", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/container_hosts/README", "644"],
+    ["container_hosts_nginx_hook.sh", "usr/bin/", "755"]
+]
