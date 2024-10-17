@@ -66,8 +66,6 @@ impl HostsUpdater {
     }
 
     pub fn update_loop(&self, command: Option<String>) -> Result<(), HostUpdaterError> {
-        let mut cmd = Command::new("sh");
-
         loop {
             sleep(self.interval);
             let daemon_container_entries: Vec<(String, String)> = match self.lister.fetch() {
@@ -143,10 +141,8 @@ impl HostsUpdater {
                     info!("Executing \"{}\"", command);
 
                     for op in operations {
-                        let cmd_args = ["-c", command];
-
-                        match cmd
-                            .args(cmd_args)
+                        match Command::new("sh")
+                            .args(["-c", command])
                             .env("HOSTS_ACTION", Into::<&str>::into(&op.0))
                             .env("HOSTS_NAME", op.1)
                             .env("HOSTS_ADDR", op.2)
