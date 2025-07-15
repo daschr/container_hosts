@@ -9,29 +9,19 @@ nginx_enabled="/etc/nginx/sites-enabled/"
 
 case "$HOSTS_ACTION" in
   add)
-    confs="$(grep -r -l "$HOSTS_NAME" "$nginx_available")"
-    if [ -z "$confs" ]; then
-      exit 0
-    fi
-    
-    while read -r conf; do 
+    grep -r -l "$HOSTS_NAME" "$nginx_available" | while read -r conf; do 
       conf_name="${conf##*/}"
       if [[ ! -h "$nginx_enabled/$conf_name" ]]; then
         ln -s "$conf" "$nginx_enabled/$conf_name"
       fi
-    done <<<"$confs"
+    done 
     ;;
   delete)
-    confs="$(grep -R -l "$HOSTS_NAME" "$nginx_enabled")"
-    if [ -z "$confs" ]; then
-      exit 0
-    fi
-  
-    while read -r conf; do
+    grep -R -l "$HOSTS_NAME" "$nginx_enabled" | while read -r conf; do
       if [[ -h "$conf" ]]; then
         rm "$conf"
       fi
-    done <<<"$confs"
+    done
     ;;
 esac
 

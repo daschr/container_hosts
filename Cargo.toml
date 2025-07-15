@@ -22,7 +22,7 @@ maintainer = "David Schramm <david@dsxm.de>"
 copyright = "2024, David Schramm <david@dsxm.de>"
 license-file = ["LICENSE"]
 extended-description = """\
-A service which watches for container createions/deletion/updates,
+A service which watches for container creations/deletion/updates,
 creates hosts entries for them and executes a script."""
 depends = "libcurl4"
 section = "web software"
